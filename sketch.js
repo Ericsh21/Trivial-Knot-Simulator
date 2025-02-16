@@ -18,7 +18,7 @@ function init() {
     document.body.appendChild(renderer.domElement);
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableRotate = false; // Disable default rotation
+    controls.enableRotate = true;
     controls.enableZoom = true;
     controls.enablePan = false; // Disable default panning
     
@@ -64,7 +64,7 @@ function createHandles() {
 }
 
 function onMouseDown(event) {
-    if (event.button === 2) { // Right-click starts orbit rotation
+    if (event.button === 2) { // Right mouse button for rotating the camera
         controls.enableRotate = true;
         return;
     }
@@ -86,7 +86,9 @@ function onMouseMove(event) {
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
         raycaster.setFromCamera(mouse, camera);
-        let planeIntersect = raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), 0));
+        let plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -camera.position.z);
+        let planeIntersect = new THREE.Vector3();
+        raycaster.ray.intersectPlane(plane, planeIntersect);
         
         if (planeIntersect) {
             selectedHandle.position.copy(planeIntersect);
