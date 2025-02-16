@@ -1,4 +1,4 @@
-let scene, camera, renderer, controls;
+let scene, camera, renderer;
 let curve, curveGeometry, curveObject;
 let points = [];
 let numPoints = 12; // Number of control points
@@ -7,6 +7,8 @@ let raycaster = new THREE.Raycaster();
 let mouse = new THREE.Vector2();
 let selectedHandle = null;
 let isDragging = false;
+let cameraRotationSpeed = 0.02;
+let cameraZoomSpeed = 0.2;
 
 function init() {
     scene = new THREE.Scene();
@@ -17,15 +19,11 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableRotate = true;
-    controls.enableZoom = true;
-    controls.enablePan = false; // Disable default panning
-    
     document.addEventListener("contextmenu", (event) => event.preventDefault()); // Prevent default right-click menu
     document.addEventListener("mousedown", onMouseDown, false);
     document.addEventListener("mousemove", onMouseMove, false);
     document.addEventListener("mouseup", onMouseUp, false);
+    document.addEventListener("keydown", onKeyDown, false);
 
     let radius = 2;
     for (let i = 0; i < numPoints; i++) {
@@ -64,10 +62,6 @@ function createHandles() {
 }
 
 function onMouseDown(event) {
-    if (event.button === 2) { // Right mouse button for rotating the camera
-        controls.enableRotate = true;
-        return;
-    }
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -98,11 +92,31 @@ function onMouseMove(event) {
 }
 
 function onMouseUp(event) {
-    if (event.button === 2) { // Disable orbit rotation when right-click is released
-        controls.enableRotate = false;
-    }
     isDragging = false;
     selectedHandle = null;
+}
+
+function onKeyDown(event) {
+    switch (event.key) {
+        case "w": // Tilt down
+            camera.rotation.x -= cameraRotationSpeed;
+            break;
+        case "s": // Tilt up
+            camera.rotation.x += cameraRotationSpeed;
+            break;
+        case "a": // Tilt right
+            camera.rotation.y -= cameraRotationSpeed;
+            break;
+        case "d": // Tilt left
+            camera.rotation.y += cameraRotationSpeed;
+            break;
+        case "e": // Zoom in
+            camera.position.z -= cameraZoomSpeed;
+            break;
+        case "q": // Zoom out
+            camera.position.z += cameraZoomSpeed;
+            break;
+    }
 }
 
 function updateCurve() {
@@ -114,7 +128,6 @@ function updateCurve() {
 
 function animate() {
     requestAnimationFrame(animate);
-    controls.update();
     renderer.render(scene, camera);
 }
 
