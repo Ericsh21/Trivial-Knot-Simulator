@@ -18,7 +18,7 @@ function init() {
     document.body.appendChild(renderer.domElement);
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableRotate = true;
+    controls.enableRotate = false; // Disable default rotation
     controls.enableZoom = true;
     controls.enablePan = false; // Disable default panning
     
@@ -64,8 +64,8 @@ function createHandles() {
 }
 
 function onMouseDown(event) {
-    if (event.button === 2) { // Right mouse button for panning
-        controls.enablePan = true;
+    if (event.button === 2) { // Right-click starts orbit rotation
+        controls.enableRotate = true;
         return;
     }
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -96,8 +96,8 @@ function onMouseMove(event) {
 }
 
 function onMouseUp(event) {
-    if (event.button === 2) { // Disable panning when right-click is released
-        controls.enablePan = false;
+    if (event.button === 2) { // Disable orbit rotation when right-click is released
+        controls.enableRotate = false;
     }
     isDragging = false;
     selectedHandle = null;
