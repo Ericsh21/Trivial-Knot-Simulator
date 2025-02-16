@@ -3,6 +3,10 @@ let curve, curveGeometry, curveObject;
 let points = [];
 let numPoints = 12; // Number of control points
 let sphereHandles = [];
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
+let selectedHandle = null;
+let isDragging = false;
 
 function init() {
     scene = new THREE.Scene();
@@ -14,8 +18,15 @@ function init() {
     document.body.appendChild(renderer.domElement);
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableRotate = true;
+    controls.enableZoom = true;
+    controls.enablePan = false; // Disable default panning
+    
+    document.addEventListener("contextmenu", (event) => event.preventDefault()); // Prevent default right-click menu
+    document.addEventListener("mousedown", onMouseDown, false);
+    document.addEventListener("mousemove", onMouseMove, false);
+    document.addEventListener("mouseup", onMouseUp, false);
 
-    // Create initial circular control points
     let radius = 2;
     for (let i = 0; i < numPoints; i++) {
         let angle = (i / numPoints) * Math.PI * 2;
@@ -52,8 +63,56 @@ function createHandles() {
     }
 }
 
+function onMouseDown(event) {
+    if (event.button === 2) { // Right mouse button for panning
+        controls.enablePan = true;
+        return;
+    }
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    let intersects = raycaster.intersectObjects(sphereHandles);
+    
+    if (intersects.length > 0) {
+        selectedHandle = intersects[0].object;
+        isDragging = true;
+    }
+}
+
+function onMouseMove(event) {
+    if (isDragging && selectedHandle) {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        let planeIntersect = raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), 0));
+        
+        if (planeIntersect) {
+            selectedHandle.position.copy(planeIntersect);
+            updateCurve();
+        }
+    }
+}
+
+function onMouseUp(event) {
+    if (event.button === 2) { // Disable panning when right-click is released
+        controls.enablePan = false;
+    }
+    isDragging = false;
+    selectedHandle = null;
+}
+
+function updateCurve() {
+    for (let i = 0; i < points.length; i++) {
+        points[i].copy(sphereHandles[i].position);
+    }
+    drawCurve();
+}
+
 function animate() {
     requestAnimationFrame(animate);
+    controls.update();
     renderer.render(scene, camera);
 }
 
