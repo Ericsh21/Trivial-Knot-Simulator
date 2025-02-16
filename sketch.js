@@ -1,63 +1,66 @@
+let scene, camera, renderer, controls;
+let curve, curveGeometry, curveObject;
 let points = [];
 let numPoints = 12; // Number of control points
-let dragging = -1; // Index of the point being dragged
+let sphereHandles = [];
 
-function setup() {
-    createCanvas(600, 600);
-    let radius = 150;
-    let centerX = width / 2;
-    let centerY = height / 2;
-    
+function init() {
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 5;
+
+    renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    // Create initial circular control points
+    let radius = 2;
     for (let i = 0; i < numPoints; i++) {
-        let angle = map(i, 0, numPoints, 0, TWO_PI);
-        let x = centerX + cos(angle) * radius;
-        let y = centerY + sin(angle) * radius;
-        points.push(createVector(x, y));
+        let angle = (i / numPoints) * Math.PI * 2;
+        let x = radius * Math.cos(angle);
+        let y = radius * Math.sin(angle);
+        let z = 0;
+        points.push(new THREE.Vector3(x, y, z));
     }
-}
-
-function draw() {
-    background(240);
-    stroke(0);
-    strokeWeight(2);
-    noFill();
     
-    beginShape();
-    for (let i = 0; i < points.length; i++) {
-        curveVertex(points[i].x, points[i].y);
-    }
-    curveVertex(points[0].x, points[0].y); // Close the loop
-    endShape(CLOSE);
+    drawCurve();
+    createHandles();
+    animate();
+}
+
+function drawCurve() {
+    if (curveObject) scene.remove(curveObject);
     
-    fill(0);
+    curve = new THREE.CatmullRomCurve3(points, true);
+    curveGeometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(100));
+    let curveMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff });
+    curveObject = new THREE.Line(curveGeometry, curveMaterial);
+    scene.add(curveObject);
+}
+
+function createHandles() {
+    let sphereGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+    let sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    
     for (let i = 0; i < points.length; i++) {
-        ellipse(points[i].x, points[i].y, 8, 8);
+        let sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        sphere.position.copy(points[i]);
+        scene.add(sphere);
+        sphereHandles.push(sphere);
     }
 }
 
-function mousePressed() {
-    for (let i = 0; i < points.length; i++) {
-        let d = dist(mouseX, mouseY, points[i].x, points[i].y);
-        if (d < 10) {
-            dragging = i;
-            break;
-        }
-    }
+function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
 }
 
-function mouseDragged() {
-    if (dragging !== -1) {
-        points[dragging].x = mouseX;
-        points[dragging].y = mouseY;
-    }
-}
+window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
-function mouseReleased() {
-    dragging = -1;
-}
-
-function keyPressed() {
-    if (key === 'r' || key === 'R') {
-        setup(); // Reset points to original trivial knot
-    }
-}
+init();
